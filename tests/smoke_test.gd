@@ -126,6 +126,29 @@ func _ready() -> void:
 	world._use_tool_objective("emergency", "use_first_aid")
 	_check(str(MissionManager.mission_states.get("emergency", "")) == "completed", "primeiros socorros concluem a missao de emergencia")
 
+	# --- Entrega conclui a missao ---
+	MissionManager.reset()
+	MissionManager.accept_mission("find_water")
+	ResourceManager.add_water(5)
+	MissionManager.deliver_to_npc("Maria", "find_water")
+	_check(str(MissionManager.mission_states.get("find_water", "")) == "completed", "entrega conclui a missao de agua")
+
+	# --- Area da missao "caminho seguro" ---
+	var safe_area: Node = null
+	for child in world.interactables.get_children():
+		if child.get("objective_id") == "safe_path_marker":
+			safe_area = child
+			break
+	_check(safe_area != null, "existe area de caminho seguro")
+	if safe_area != null:
+		MissionManager.reset()
+		var blocked: String = str(safe_area.interact(world.player))
+		_check(blocked.contains("Aceita primeiro"), "caminho seguro exige missao activa")
+		_check(not safe_area.completed, "area nao completa sem missao")
+		MissionManager.accept_mission("safe_path")
+		safe_area.interact(world.player)
+		_check(str(MissionManager.mission_states.get("safe_path", "")) == "completed", "caminho seguro conclui a missao")
+
 	# --- Textos em portugues ---
 	var summary: String = MissionManager.get_available_missions_summary()
 	_check(not summary.contains("available") and not summary.contains("completed"), "estados de missao em portugues")

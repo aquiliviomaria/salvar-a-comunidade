@@ -378,6 +378,8 @@ func _add_animals() -> void:
 
 func _add_community_missions() -> void:
 	# [title, message, icon, position, color, health_reward, xp_reward, money_reward]
+	# As duas ultimas entradas (opcionais) ligam a area a uma missao:
+	# [..., mission_id, objective_id]. Sem elas, a area e uma tarefa directa.
 	var data := [
 		["Socorrer familia", "Pessoas afectadas receberam apoio.", "🚑", Vector3(6, 0.08, -12), Color(0.88, 0.22, 0.2, 0.65), 10, 55, 80],
 		["Reparar poco", "O poco comunitario voltou a funcionar.", "🛠", Vector3(-15, 0.08, 14), Color(0.12, 0.46, 0.88, 0.65), 12, 70, 100],
@@ -386,7 +388,8 @@ func _add_community_missions() -> void:
 		["Limpar estrada", "A estrada principal ficou segura.", "🧹", Vector3(0, 0.08, 18), Color(0.86, 0.68, 0.25, 0.65), 7, 45, 50],
 		["Apoiar escola", "Criancas receberam material escolar.", "📚", Vector3(28, 0.08, -10), Color(0.45, 0.28, 0.88, 0.65), 10, 65, 90],
 		["Posto de saude", "O posto de saude recebeu organizacao.", "🏥", Vector3(22, 0.08, 4), Color(0.95, 0.32, 0.32, 0.65), 10, 60, 100],
-		["Cuidar da praia", "A praia esta limpa para a comunidade.", "🏖", Vector3(43, 0.08, 43), Color(0.18, 0.55, 0.9, 0.65), 8, 55, 60]
+		["Cuidar da praia", "A praia esta limpa para a comunidade.", "🏖", Vector3(43, 0.08, 43), Color(0.18, 0.55, 0.9, 0.65), 8, 55, 60],
+		["Marcar caminho seguro", "O caminho seguro ficou sinalizado.", "🧭", Vector3(24, 0.08, -6), Color(0.2, 0.7, 0.6, 0.65), 0, 0, 0, "safe_path", "safe_path_marker"]
 	]
 	for item in data:
 		var area := MISSION_AREA_SCENE.instantiate()
@@ -396,6 +399,10 @@ func _add_community_missions() -> void:
 		area.health_reward = item[5]
 		area.xp_reward = item[6]
 		area.money_reward = item[7]
+		if item.size() > 8:
+			area.direct_community_task = false
+			area.mission_id = str(item[8])
+			area.objective_id = str(item[9])
 		interactables.add_child(area)
 		area.global_position = item[3]
 		area.get_node("MeshInstance3D").material_override = _material(item[4])
@@ -886,14 +893,15 @@ func _accept_npc_mission(mission_id: String) -> void:
 
 
 func _deliver_npc_mission(npc_name: String, mission_id: String) -> void:
+	# Fecha o dialogo antes de entregar, para que o ecra de conclusao
+	# (se a entrega terminar a missao) nao seja apagado.
+	_clear_modal()
 	var result: Dictionary = MissionManager.deliver_to_npc(npc_name, mission_id)
 	if bool(result.get("ok", false)):
 		SoundManager.play_success()
 	else:
 		SoundManager.play_error()
 	_show_message(str(result.get("message", "")))
-	if bool(result.get("ok", false)):
-		_clear_modal()
 
 
 func _show_tree_popup(payload: Dictionary) -> void:

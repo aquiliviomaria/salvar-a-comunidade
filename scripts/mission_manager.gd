@@ -229,6 +229,10 @@ func deliver_to_npc(npc_name: String, mission_id: String) -> Dictionary:
 		var objective_id: String = str(objective.get("id", ""))
 		if objective_id.begins_with("deliver_"):
 			progress_action(objective_id, int(objective.get("target", 1)))
+	# As missoes com entrega so ficam concluidas quando todos os objectivos,
+	# incluindo a entrega, estiverem cumpridos.
+	if _all_objectives_done(mission_id):
+		_complete_mission(mission_id)
 	return {"ok": true, "message": "Entrega concluida."}
 
 
@@ -343,10 +347,10 @@ func apply_state(state: Dictionary) -> void:
 
 
 func _can_auto_complete(mission_id: String) -> bool:
-	if not _all_objectives_done(mission_id):
-		return false
-	var mission: Dictionary = missions[mission_id]
-	return not mission.has("deliver")
+	# Conclui automaticamente quando todos os objectivos estao cumpridos.
+	# Nas missoes com entrega, o objectivo de entrega so fica concluido
+	# depois de o jogador entregar os recursos ao NPC.
+	return _all_objectives_done(mission_id)
 
 
 func _complete_mission(mission_id: String) -> void:
@@ -354,6 +358,11 @@ func _complete_mission(mission_id: String) -> void:
 		return
 	var mission: Dictionary = missions[mission_id]
 	var reward: Dictionary = mission.get("reward", {})
+	# Marca a missao como concluida antes de entregar as recompensas.
+	# Assim, os recursos da recompensa (agua, alimento, etc.) nao voltam a
+	# disparar progress_action para a missao que esta a terminar.
+	mission_states[mission_id] = STATE_COMPLETED
+	current_mission = ""
 	ResourceManager.add_money(int(reward.get("money", 0)))
 	ResourceManager.add_water(int(reward.get("water", 0)))
 	ResourceManager.add_food(int(reward.get("food", 0)))
@@ -362,8 +371,6 @@ func _complete_mission(mission_id: String) -> void:
 	ResourceManager.add_seedlings(int(reward.get("seedlings", 0)))
 	_add_xp(int(reward.get("xp", 0)))
 	_apply_stats(mission.get("stats", {}))
-	mission_states[mission_id] = STATE_COMPLETED
-	current_mission = ""
 	mission_changed.emit("Sem missao", "Fale com outro habitante para continuar.")
 	message_sent.emit("MISSÃO CONCLUÍDA: %s" % str(mission.title))
 	var completed_mission: Dictionary = mission.duplicate(true)
