@@ -90,10 +90,15 @@ godot --headless --path . scenes/main.tscn --quit
 
 - `W`, `A`, `S`, `D`: mover personagem.
 - Rato: controlar a camara.
-- `E`: interagir com NPCs, casas, fontes de agua e areas de missao.
-- `B`: construir casa, se houver recursos.
+- `E`: interagir com NPCs, casas, fontes de agua, arvores e areas de missao.
+- `F`: abrir/fechar o menu de ferramentas.
+- `1` a `5`: escolher rapidamente uma ferramenta (machado, martelo, serrote, recolha, primeiros socorros).
+- `B`: construir com o martelo, se houver recursos.
 - `T`: plantar arvore, se houver recursos.
-- `Esc`: libertar o rato.
+- `C`: abrir a loja do mercado.
+- `Esc`: abrir/fechar a pausa e fechar menus.
+
+A personagem predefinida e a **Maica**. A seleccao de outras personagens faz-se no menu **Personagens**.
 
 ## Estrutura principal
 

@@ -30,14 +30,19 @@ var prompt_label: Label
 var tool_bar: HBoxContainer
 var modal_layer: Control
 var pause_panel: PanelContainer
+var tool_menu: PanelContainer
+var tool_menu_list: VBoxContainer
+var modal_open := false
 var build_position: Vector3 = Vector3.ZERO
 var touch_controls: Control
 
 
 func _ready() -> void:
-	if not SaveManager.load_game():
-		ResourceManager.reset()
-		MissionManager.reset()
+	# Cada partida comeca fresca, respeitando a personagem escolhida no menu.
+	# O progresso guardado continua acessivel com F9 (carregar).
+	get_tree().paused = false
+	ResourceManager.reset()
+	MissionManager.reset()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_build_runtime_ui()
 	ResourceManager.resources_changed.connect(_update_hud)
@@ -55,7 +60,7 @@ func _ready() -> void:
 	_spawn_player()
 	_build_shop_panel()
 	_update_hud()
-	_show_message("%s | E interage | 1-5 ferramentas | B construcao | C loja." % PlayerManager.get_character_name())
+	_show_message("%s | E interage | F ferramentas | B construcao | C loja." % PlayerManager.get_character_name())
 
 
 func _build_world() -> void:
@@ -72,9 +77,14 @@ func _build_world() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# A tecla F abre/fecha as ferramentas. Quando a pausa esta aberta este
+	# no esta pausado, por isso F nao afecta o mundo nesse momento.
+	if event.is_action_pressed("toggle_tools") and not get_tree().paused:
+		if not _is_typing_in_ui():
+			_toggle_tools_menu()
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_ESCAPE:
-			_toggle_pause()
 		if event.keycode == KEY_F5:
 			SaveManager.save_game()
 			_show_message("💾 Jogo guardado.")
@@ -85,12 +95,18 @@ func _unhandled_input(event: InputEvent) -> void:
 				_show_message("⚠️ Nenhum ficheiro de save encontrado.")
 
 
+func _is_typing_in_ui() -> bool:
+	var focused: Control = get_viewport().gui_get_focus_owner()
+	return focused is LineEdit or focused is TextEdit
+
+
 func _spawn_player() -> void:
 	player = PLAYER_SCENE.instantiate()
 	add_child(player)
 	player.global_position = Vector3(0, 0.2, 8)
 	player.interacted.connect(_handle_interaction_result)
 	player.action_requested.connect(_on_player_action_requested)
+	player.prompt_changed.connect(_on_player_prompt_changed)
 
 
 func _add_ground() -> void:
@@ -426,10 +442,9 @@ func _on_player_action_requested(action: String, position: Vector3) -> void:
 		"toggle_shop":
 			if shop_panel:
 				shop_panel.visible = not shop_panel.visible
-				if shop_panel.visible:
-					Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-				else:
-					Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+				if shop_panel.visible and tool_menu:
+					tool_menu.visible = false
+				_refresh_pointer_state()
 
 
 func _build_player_house(position: Vector3) -> void:
@@ -559,7 +574,7 @@ func _build_shop_panel() -> void:
 	close_btn.add_theme_stylebox_override("normal", close_style)
 	close_btn.pressed.connect(func():
 		shop_panel.visible = false
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		_refresh_pointer_state()
 	)
 	box.add_child(close_btn)
 
@@ -623,6 +638,8 @@ func _update_hud(_a = null, _b = null, _c = null, _d = null) -> void:
 
 
 func _build_runtime_ui() -> void:
+	# O HUD continua a receber eventos mesmo com a arvore pausada.
+	hud_layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	var old_top: Node = hud_layer.get_node_or_null("TopPanel")
 	if old_top:
 		old_top.queue_free()
@@ -635,9 +652,9 @@ func _build_runtime_ui() -> void:
 	top_right_label = _make_floating_label(Vector2(760, 14), 15, HORIZONTAL_ALIGNMENT_RIGHT)
 	top_right_label.size = Vector2(480, 170)
 	hud_layer.add_child(top_right_label)
-	prompt_label = _make_floating_label(Vector2(440, 632), 18, HORIZONTAL_ALIGNMENT_CENTER)
-	prompt_label.size = Vector2(400, 32)
-	prompt_label.text = "[ E ] Interagir"
+	prompt_label = _make_floating_label(Vector2(380, 632), 18, HORIZONTAL_ALIGNMENT_CENTER)
+	prompt_label.size = Vector2(520, 32)
+	prompt_label.text = ""
 	hud_layer.add_child(prompt_label)
 	message_label = _make_floating_label(Vector2(20, 670), 16, HORIZONTAL_ALIGNMENT_LEFT)
 	message_label.size = Vector2(900, 36)
@@ -651,7 +668,9 @@ func _build_runtime_ui() -> void:
 	modal_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud_layer.add_child(modal_layer)
 	_build_pause_panel()
+	_build_tools_menu()
 	_build_touch_controls()
+	_build_pause_controller()
 	_update_tool_bar()
 
 
@@ -692,6 +711,14 @@ func _update_tool_bar(_tool_id: String = "") -> void:
 		label.add_theme_constant_override("shadow_offset_y", 2)
 		item.add_child(label)
 		tool_bar.add_child(item)
+	var hint := Label.new()
+	hint.text = "   F ferramentas"
+	hint.add_theme_font_size_override("font_size", 13)
+	hint.add_theme_color_override("font_color", Color(0.72, 0.78, 0.70))
+	hint.add_theme_color_override("font_shadow_color", Color(0.02, 0.03, 0.02, 0.95))
+	hint.add_theme_constant_override("shadow_offset_x", 2)
+	hint.add_theme_constant_override("shadow_offset_y", 2)
+	tool_bar.add_child(hint)
 
 
 func _on_tool_changed(_tool_id: String) -> void:
@@ -729,15 +756,40 @@ func _clear_modal() -> void:
 	for child: Node in modal_layer.get_children():
 		if child != pause_panel:
 			child.queue_free()
+	modal_open = false
+	_refresh_pointer_state()
+
+
+func _has_modal() -> bool:
+	return modal_open
+
+
+func _refresh_pointer_state() -> void:
+	# Decide o dono do rato: pausa > modal > menu de ferramentas > loja > jogo.
+	if get_tree().paused:
+		modal_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
+	if modal_open:
+		modal_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
+	if tool_menu and tool_menu.visible:
+		modal_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
+	if shop_panel and shop_panel.visible:
+		modal_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
 	modal_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if not get_tree().paused:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _show_modal(title: String, body: String, buttons: Array) -> void:
 	_clear_modal()
-	modal_layer.mouse_filter = Control.MOUSE_FILTER_STOP
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	modal_open = true
+	_refresh_pointer_state()
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(560, 0)
 	panel.set_anchors_preset(Control.PRESET_CENTER)
@@ -794,8 +846,17 @@ func _show_npc_popup(payload: Dictionary) -> void:
 	]
 	if not mission.is_empty():
 		body += "\n\n%s\n%s" % [str(mission.get("title", "")), str(context.get("brief", ""))]
+	var state: String = str(context.get("state", ""))
 	var buttons: Array = []
-	match str(context.get("state", "")):
+	if state == "active" and not mission.is_empty():
+		# Se a missao exige uma ferramenta e o jogador a tem seleccionada,
+		# permite executar a accao especifica (ex.: primeiros socorros).
+		var required_tool: String = str(mission.get("required_tool", ""))
+		var tool_objective: String = str(mission.get("tool_objective", ""))
+		if required_tool != "" and tool_objective != "" and ToolManager.selected_tool_id == required_tool:
+			if not MissionManager.is_objective_done(mission_id, tool_objective):
+				buttons.append({"text": "Prestar primeiros socorros", "callback": Callable(self, "_use_tool_objective").bind(mission_id, tool_objective)})
+	match state:
 		"available":
 			buttons.append({"text": "Aceitar", "callback": Callable(self, "_accept_npc_mission").bind(mission_id)})
 		"active":
@@ -807,6 +868,14 @@ func _show_npc_popup(payload: Dictionary) -> void:
 			buttons.append({"text": "Fechar", "callback": Callable(self, "_clear_modal")})
 	buttons.append({"text": "Fechar", "callback": Callable(self, "_clear_modal")})
 	_show_modal(npc_name, body, buttons)
+
+
+func _use_tool_objective(mission_id: String, objective_id: String) -> void:
+	# Fecha o dialogo antes de progredir, para que o ecra de conclusao possa aparecer.
+	_clear_modal()
+	MissionManager.progress_action(objective_id, 1)
+	SoundManager.play_collect()
+	_show_message("Accao concluida com %s." % str(ToolManager.get_selected_tool().get("name", "a ferramenta")))
 
 
 func _accept_npc_mission(mission_id: String) -> void:
@@ -849,8 +918,6 @@ func _tree_action(tree: Node, action: String) -> void:
 			text = str(tree.call("protect_tree"))
 		"cut":
 			text = str(tree.call("cut_tree"))
-			if text.contains("+3 madeira"):
-				SoundManager.play_cut()
 	_show_message(text)
 	_clear_modal()
 
@@ -871,15 +938,33 @@ func _show_build_menu(position: Vector3) -> void:
 
 
 func _build_structure(structure_id: String) -> void:
-	var result: Dictionary = ConstructionManager.build(structure_id, build_position.snapped(Vector3(1, 1, 1)))
+	var snapped: Vector3 = build_position.snapped(Vector3(1, 1, 1))
+	if not _is_build_position_valid(snapped):
+		SoundManager.play_error()
+		_clear_modal()
+		_show_message("Nao podes construir aqui. Procura um espaco livre na comunidade.")
+		return
+	var result: Dictionary = ConstructionManager.build(structure_id, snapped)
 	if bool(result.get("ok", false)):
-		_spawn_structure(structure_id, build_position.snapped(Vector3(1, 1, 1)))
+		_spawn_structure(structure_id, snapped)
 		MissionManager.progress_action("build_structure", 1)
 		SoundManager.play_build()
 	else:
 		SoundManager.play_error()
 	_clear_modal()
 	_show_message(str(result.get("message", "")))
+
+
+func _is_build_position_valid(position: Vector3) -> bool:
+	if absf(position.x) > 55.0 or absf(position.z) > 55.0:
+		return false
+	for house: Node in houses.get_children():
+		if house is Node3D and (house as Node3D).global_position.distance_to(position) < 4.0:
+			return false
+	for item: Dictionary in ConstructionManager.built_structures:
+		if Vector3(item.get("position", Vector3.ZERO)).distance_to(position) < 3.0:
+			return false
+	return true
 
 
 func _spawn_structure(structure_id: String, position: Vector3) -> void:
@@ -925,12 +1010,12 @@ func _show_mission_complete(mission: Dictionary, rewards: Dictionary) -> void:
 func _build_pause_panel() -> void:
 	pause_panel = PanelContainer.new()
 	pause_panel.visible = false
-	pause_panel.custom_minimum_size = Vector2(360, 0)
+	pause_panel.custom_minimum_size = Vector2(380, 0)
 	pause_panel.set_anchors_preset(Control.PRESET_CENTER)
-	pause_panel.offset_left = -180.0
-	pause_panel.offset_top = -150.0
-	pause_panel.offset_right = 180.0
-	pause_panel.offset_bottom = 150.0
+	pause_panel.offset_left = -190.0
+	pause_panel.offset_top = -200.0
+	pause_panel.offset_right = 190.0
+	pause_panel.offset_bottom = 200.0
 	modal_layer.add_child(pause_panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
@@ -953,21 +1038,49 @@ func _build_pause_panel() -> void:
 	options_btn.pressed.connect(func(): _show_message("Opcoes: usa F5 para guardar e F9 para carregar."))
 	box.add_child(options_btn)
 	var menu_btn := Button.new()
-	menu_btn.text = "Menu principal"
+	menu_btn.text = "Menu Principal"
 	menu_btn.pressed.connect(_return_to_menu)
 	box.add_child(menu_btn)
+	var quit_btn := Button.new()
+	quit_btn.text = "Sair"
+	quit_btn.pressed.connect(_quit_game)
+	box.add_child(quit_btn)
+
+
+func _quit_game() -> void:
+	SaveManager.save_game()
+	get_tree().paused = false
+	get_tree().quit()
+
+
+func handle_cancel() -> void:
+	# ESC contextual: fecha o que estiver aberto antes de pausar.
+	if tool_menu and tool_menu.visible:
+		_close_tools_menu()
+		return
+	if shop_panel and shop_panel.visible:
+		shop_panel.visible = false
+		_refresh_pointer_state()
+		return
+	if modal_open:
+		_clear_modal()
+		return
+	_toggle_pause()
 
 
 func _toggle_pause() -> void:
 	var paused: bool = not get_tree().paused
+	if paused and tool_menu and tool_menu.visible:
+		tool_menu.visible = false
 	get_tree().paused = paused
 	pause_panel.visible = paused
-	modal_layer.mouse_filter = Control.MOUSE_FILTER_STOP if paused else Control.MOUSE_FILTER_IGNORE
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if paused else Input.MOUSE_MODE_CAPTURED
+	_refresh_pointer_state()
 
 
 func _restart_game() -> void:
 	get_tree().paused = false
+	pause_panel.visible = false
+	modal_open = false
 	ResourceManager.reset()
 	MissionManager.reset()
 	get_tree().reload_current_scene()
@@ -976,7 +1089,131 @@ func _restart_game() -> void:
 func _return_to_menu() -> void:
 	SaveManager.save_game()
 	get_tree().paused = false
+	pause_panel.visible = false
+	modal_open = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().change_scene_to_file("res://scenes/title_screen.tscn")
+
+
+func _build_pause_controller() -> void:
+	var controller := Node.new()
+	controller.name = "PauseInput"
+	controller.set_script(load("res://scripts/pause_input.gd"))
+	hud_layer.add_child(controller)
+
+
+func _on_player_prompt_changed(text: String) -> void:
+	if prompt_label:
+		prompt_label.text = text
+
+
+func _build_tools_menu() -> void:
+	tool_menu = PanelContainer.new()
+	tool_menu.name = "ToolsMenu"
+	tool_menu.visible = false
+	tool_menu.custom_minimum_size = Vector2(440, 0)
+	tool_menu.set_anchors_preset(Control.PRESET_CENTER)
+	tool_menu.offset_left = -220.0
+	tool_menu.offset_top = -250.0
+	tool_menu.offset_right = 220.0
+	tool_menu.offset_bottom = 250.0
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.035, 0.06, 0.05, 0.97)
+	style.border_color = Color(0.72, 0.62, 0.30, 0.9)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(10)
+	style.set_content_margin_all(18)
+	tool_menu.add_theme_stylebox_override("panel", style)
+	hud_layer.add_child(tool_menu)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	tool_menu.add_child(box)
+
+	var title := Label.new()
+	title.text = "FERRAMENTAS  (F)"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(1.0, 0.86, 0.45))
+	box.add_child(title)
+
+	var hint := Label.new()
+	hint.text = "Escolhe a ferramenta certa para cada accao no mundo."
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.add_theme_font_size_override("font_size", 14)
+	hint.add_theme_color_override("font_color", Color(0.82, 0.86, 0.78))
+	box.add_child(hint)
+	box.add_child(HSeparator.new())
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	tool_menu_list = VBoxContainer.new()
+	tool_menu_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tool_menu_list.add_theme_constant_override("separation", 8)
+	scroll.add_child(tool_menu_list)
+
+	var close_btn := Button.new()
+	close_btn.text = "Fechar (F)"
+	close_btn.pressed.connect(_close_tools_menu)
+	box.add_child(close_btn)
+
+
+func _populate_tools_menu() -> void:
+	for child: Node in tool_menu_list.get_children():
+		child.queue_free()
+	for tool: Dictionary in ToolManager.get_tools():
+		var tool_id: String = str(tool.get("id", ""))
+		var selected: bool = bool(tool.get("selected", false))
+		var icon := IconManager.get_icon(str(tool.get("icon", "")))
+		var entry := Button.new()
+		entry.text = "%s%s  (tecla %s)" % ["▶ " if selected else "   ", str(tool.get("name", "")), str(tool.get("shortcut", ""))]
+		entry.custom_minimum_size = Vector2(0, 42)
+		entry.icon = icon
+		entry.expand_icon = true
+		entry.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		entry.add_theme_font_size_override("font_size", 16)
+		entry.add_theme_color_override("font_color", Color(1.0, 0.86, 0.45) if selected else Color(0.93, 0.95, 0.88))
+		entry.pressed.connect(_select_tool_from_menu.bind(tool_id))
+		tool_menu_list.add_child(entry)
+		var desc := Label.new()
+		desc.text = str(tool.get("description", ""))
+		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		desc.add_theme_font_size_override("font_size", 13)
+		desc.add_theme_color_override("font_color", Color(0.76, 0.82, 0.74))
+		tool_menu_list.add_child(desc)
+
+
+func _toggle_tools_menu() -> void:
+	if tool_menu == null:
+		return
+	if tool_menu.visible:
+		_close_tools_menu()
+	else:
+		_open_tools_menu()
+
+
+func _open_tools_menu() -> void:
+	if get_tree().paused or modal_open:
+		return
+	if shop_panel:
+		shop_panel.visible = false
+	_populate_tools_menu()
+	tool_menu.visible = true
+	_refresh_pointer_state()
+
+
+func _close_tools_menu() -> void:
+	if tool_menu:
+		tool_menu.visible = false
+	_refresh_pointer_state()
+
+
+func _select_tool_from_menu(tool_id: String) -> void:
+	if ToolManager.select_tool(tool_id):
+		_close_tools_menu()
 
 
 func _build_touch_controls() -> void:
@@ -985,8 +1222,8 @@ func _build_touch_controls() -> void:
 	touch_controls.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud_layer.add_child(touch_controls)
 	var interact_button := _make_touch_button("E", Vector2(1150, 570), "interact")
-	var tool_button := _make_touch_button("Ferr.", Vector2(1035, 625), "tool")
-	var build_button := _make_touch_button("Build", Vector2(1150, 625), "build")
+	var tool_button := _make_touch_button("Ferramentas", Vector2(1020, 625), "tool")
+	var build_button := _make_touch_button("Construir", Vector2(1140, 625), "build")
 	touch_controls.add_child(interact_button)
 	touch_controls.add_child(tool_button)
 	touch_controls.add_child(build_button)
@@ -1015,12 +1252,12 @@ func _make_touch_button(text: String, position: Vector2, action: String) -> Butt
 func _on_touch_button(action: String) -> void:
 	if player == null:
 		return
+	if get_tree().paused or modal_open or (tool_menu and tool_menu.visible):
+		return
 	match action:
 		"interact":
 			player.call("_interact")
 		"tool":
-			var ids: Array = ["axe", "hammer", "saw", "collector", "first_aid"]
-			var index: int = ids.find(ToolManager.selected_tool_id)
-			ToolManager.select_tool(str(ids[(index + 1) % ids.size()]))
+			_toggle_tools_menu()
 		"build":
 			_show_build_menu(player.global_position + (-player.global_transform.basis.z.normalized() * 4.0))

@@ -2,6 +2,7 @@ extends CharacterBody3D
 
 signal interacted(data: Variant)
 signal action_requested(action: String, position: Vector3)
+signal prompt_changed(text: String)
 
 @export var speed := 6.0
 @export var gravity := -22.0
@@ -15,6 +16,7 @@ var _pitch := -0.2
 var player_name := "Joaquim"
 var _walk_time := 0.0
 var _base_y := 0.0
+var _last_prompt := ""
 
 
 func _ready() -> void:
@@ -30,23 +32,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		_pitch = clamp(_pitch - event.relative.y * mouse_sensitivity, -0.85, 0.35)
 		camera_pivot.rotation.x = _pitch
-	if event.is_action_pressed("ui_cancel"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		return
 	if event is InputEventMouseButton and event.pressed:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		var key: int = event.keycode
+		if key >= KEY_1 and key <= KEY_5:
+			var tool_ids: Array = ["axe", "hammer", "saw", "collector", "first_aid"]
+			var index: int = int(key - KEY_1)
+			ToolManager.select_tool(str(tool_ids[index]))
+		elif key == KEY_B:
+			action_requested.emit("open_build_menu", _get_action_position())
+		elif key == KEY_T:
+			action_requested.emit("plant_tree", _get_action_position())
+		elif key == KEY_C:
+			action_requested.emit("toggle_shop", global_position)
 	if event.is_action_pressed("interact"):
 		_interact()
-		if event is InputEventKey and event.pressed and not event.echo:
-			if event.keycode >= KEY_1 and event.keycode <= KEY_5:
-				var tool_ids: Array = ["axe", "hammer", "saw", "collector", "first_aid"]
-				var index: int = int(event.keycode - KEY_1)
-				ToolManager.select_tool(str(tool_ids[index]))
-			if event.keycode == KEY_B:
-				action_requested.emit("open_build_menu", _get_action_position())
-			if event.keycode == KEY_T:
-				action_requested.emit("plant_tree", _get_action_position())
-		if event.keycode == KEY_C:
-			action_requested.emit("toggle_shop", global_position)
 
 
 func _physics_process(delta: float) -> void:
@@ -68,25 +71,43 @@ func _physics_process(delta: float) -> void:
 		_reset_walk_pose(delta)
 
 	move_and_slide()
+	_update_prompt()
+
+
+func _update_prompt() -> void:
+	var target: Node = _get_focus_target()
+	var prompt := ""
+	if target != null:
+		if target.has_method("get_prompt"):
+			prompt = str(target.call("get_prompt", self))
+		elif target.has_method("interact"):
+			prompt = "[ E ] Interagir"
+	if prompt != _last_prompt:
+		_last_prompt = prompt
+		prompt_changed.emit(prompt)
+
+
+func _get_focus_target() -> Node:
+	# Prefere o objecto que o jogador esta a olhar; caso contrario, o mais proximo.
+	interaction_ray.force_raycast_update()
+	if interaction_ray.is_colliding():
+		var collider: Object = interaction_ray.get_collider()
+		if collider is Node and (collider as Node).has_method("interact"):
+			return collider as Node
+	return _find_nearest_interactable()
 
 
 func _interact() -> void:
-	interaction_ray.force_raycast_update()
-	var target: Object = null
-	if interaction_ray.is_colliding():
-		target = interaction_ray.get_collider()
-
-	if not target or not target.has_method("interact"):
-		target = _find_nearest_interactable()
-
-		if target and target.has_method("interact"):
-			var result: Variant = target.interact(self)
-			if typeof(result) == TYPE_STRING and result != "":
-				interacted.emit(result)
-			elif typeof(result) == TYPE_DICTIONARY:
-				interacted.emit(result)
-	else:
-		interacted.emit("👀 Aproxime-se de uma pessoa, casa, agua, jardim ou missao.")
+	var target: Node = _get_focus_target()
+	if target != null and target.has_method("interact"):
+		var result: Variant = target.interact(self)
+		if typeof(result) == TYPE_STRING:
+			if str(result) != "":
+				interacted.emit(str(result))
+		elif typeof(result) == TYPE_DICTIONARY:
+			interacted.emit(result)
+		return
+	interacted.emit("👀 Aproxime-se de uma pessoa, casa, agua, jardim ou missao.")
 
 
 func _find_nearest_interactable() -> Node:

@@ -76,6 +76,7 @@ var missions: Dictionary = {
 			{"id": "use_first_aid", "label": "Usar kit de primeiros socorros", "target": 1}
 		],
 		"required_tool": "first_aid",
+		"tool_objective": "use_first_aid",
 		"reward": {"money": 110, "xp": 75},
 		"stats": {"health": 12, "wellbeing": 9}
 	},
@@ -114,6 +115,19 @@ var missions: Dictionary = {
 		],
 		"reward": {"money": 120, "xp": 90, "food": 2},
 		"stats": {"wellbeing": 12, "food": 5}
+	},
+	"feed_animals": {
+		"title": "Levar agua aos animais",
+		"category": "animais",
+		"description": "Custodio precisa de agua para os bois e cabritos nos pastos.",
+		"npc": "Custodio",
+		"objectives": [
+			{"id": "collect_water", "label": "Recolher 4 unidades de agua", "target": 4},
+			{"id": "deliver_water", "label": "Entregar agua a Custodio", "target": 1}
+		],
+		"deliver": {"water": 4},
+		"reward": {"money": 85, "xp": 55, "food": 2},
+		"stats": {"food": 8, "wellbeing": 6}
 	}
 }
 
@@ -267,7 +281,7 @@ func get_mission_brief(id: String = "") -> String:
 		var objective_id: String = str(objective.get("id", ""))
 		var target: int = int(objective.get("target", 1))
 		var value: int = int(mission_progress.get(mission_id, {}).get(objective_id, 0))
-		var mark: String = "OK" if value >= target else "--"
+		var mark: String = "✓" if value >= target else "•"
 		lines.append("%s %s (%d/%d)" % [mark, str(objective.get("label", "")), value, target])
 	var reward: Dictionary = mission.get("reward", {})
 	lines.append("")
@@ -280,8 +294,28 @@ func get_available_missions_summary() -> String:
 	for mission_id: String in missions.keys():
 		var state: String = str(mission_states.get(mission_id, STATE_AVAILABLE))
 		var mission: Dictionary = missions[mission_id]
-		lines.append("%s - %s [%s]" % [str(mission.title), str(mission.get("npc", "")), state])
+		lines.append("%s - %s [%s]" % [str(mission.title), str(mission.get("npc", "")), _state_label(state)])
 	return "\n".join(lines)
+
+
+func is_objective_done(mission_id: String, objective_id: String) -> bool:
+	if not mission_progress.has(mission_id):
+		return false
+	var target: int = _objective_target(mission_id, objective_id)
+	var value: int = int(mission_progress[mission_id].get(objective_id, 0))
+	return value >= target
+
+
+func _state_label(state: String) -> String:
+	match state:
+		STATE_ACTIVE:
+			return "em curso"
+		STATE_COMPLETED:
+			return "concluida"
+		STATE_FAILED:
+			return "falhada"
+		_:
+			return "disponivel"
 
 
 func get_state() -> Dictionary:

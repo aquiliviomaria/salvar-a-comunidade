@@ -69,6 +69,10 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 
+func get_prompt(_player: Node) -> String:
+	return "E — Falar com %s" % npc_name
+
+
 func interact(_player: Node) -> Dictionary:
 	wait_time = 4.0
 	velocity = Vector3.ZERO

@@ -13,10 +13,15 @@ const MAIN_SCENE_PATH: String = "res://scenes/main.tscn"
 @onready var content_title: Label = %ContentTitle
 @onready var content_text: Label = %ContentText
 @onready var character_list: VBoxContainer = %CharacterList
+@onready var character_area: VBoxContainer = %CharacterArea
 @onready var selected_character_label: Label = %SelectedCharacterLabel
+@onready var avatar_frame: PanelContainer = %AvatarFrame
+@onready var avatar_image: TextureRect = %AvatarImage
 
 
 func _ready() -> void:
+	# Garante que o menu nunca herda um estado de pausa do jogo.
+	get_tree().paused = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	start_button.pressed.connect(_on_start_pressed)
 	character_button.pressed.connect(_show_characters)
@@ -25,6 +30,7 @@ func _ready() -> void:
 	how_to_button.pressed.connect(_show_how_to)
 	options_button.pressed.connect(_show_options)
 	quit_button.pressed.connect(_on_quit_pressed)
+	$RootMargin/Layout/MainPanel/MainContent/CharacterArea/BackButton.pressed.connect(_show_home)
 	PlayerManager.character_changed.connect(_on_character_changed)
 
 	_build_character_buttons()
@@ -50,24 +56,29 @@ func _on_quit_pressed() -> void:
 
 
 func _show_home() -> void:
+	character_area.visible = false
 	content_title.text = "Bem-vindo"
-	content_text.text = "Escolhe uma personagem e entra na comunidade para ajudar com agua, saude, alimento, ambiente e habitacao.\n\nObjetivo inicial: conversa com os habitantes, aceita missoes e melhora os indicadores da comunidade."
+	content_text.text = "A personagem escolhida vai liderar as accoes na comunidade.\n\nEntra na aldeia, fala com os habitantes, aceita missoes e melhora a agua, a saude, a alimentacao, o ambiente e a habitacao.\n\nUsa o menu Personagens para trocar de personagem."
 
 
 func _show_characters() -> void:
 	SoundManager.play_ui()
+	character_area.visible = true
 	content_title.text = "Personagens"
-	content_text.text = "Seleciona quem vai liderar as acoes comunitarias. A escolha muda o visual do jogador no mundo 3D."
+	content_text.text = "Selecciona quem vai liderar as accoes comunitarias. A escolha muda o visual do jogador no mundo 3D e mantem-se quando iniciares a partida."
+	_refresh_character_buttons()
 
 
 func _show_missions() -> void:
 	SoundManager.play_ui()
+	character_area.visible = false
 	content_title.text = "Missoes comunitarias"
 	content_text.text = MissionManager.get_available_missions_summary()
 
 
 func _show_inventory() -> void:
 	SoundManager.play_ui()
+	character_area.visible = false
 	content_title.text = "Inventario"
 	content_text.text = "Recursos\nMT: %d\nAgua: %d\nAlimentos: %d\nMedicamentos: %d\nMadeira: %d\nMudas: %d\n\nFerramentas\n%s" % [
 		ResourceManager.money,
@@ -82,14 +93,16 @@ func _show_inventory() -> void:
 
 func _show_how_to() -> void:
 	SoundManager.play_ui()
+	character_area.visible = false
 	content_title.text = "Como jogar"
-	content_text.text = "WASD: mover\nRato: controlar a camara\nE: interagir\nB: construir casa, se tiver recursos\nT: plantar arvore, se tiver recursos\nEsc: libertar o rato"
+	content_text.text = "WASD: mover\nRato: controlar a camara\nE: interagir (falar, recolher agua, cortar)\nF: abrir/fechar o menu de ferramentas\n1-5: escolher rapidamente uma ferramenta\nB: construir com o martelo\nT: plantar uma arvore\nC: abrir a loja do mercado\nEsc: pausa / fechar menus"
 
 
 func _show_options() -> void:
 	SoundManager.play_ui()
+	character_area.visible = false
 	content_title.text = "Opcoes"
-	content_text.text = "Progresso: F5 guarda e F9 carrega durante o jogo.\nMenu de pausa: Esc no jogo.\nInterface: HUD minimalista com informacoes soltas no cenario.\n\nAs opcoes visuais e audio podem ser expandidas quando houver assets finais."
+	content_text.text = "Progresso: F5 guarda e F9 carrega durante o jogo.\nPausa: Esc no jogo.\nInterface: HUD minimalista com informacoes soltas no cenario.\n\nAs opcoes visuais e audio podem ser expandidas quando houver assets finais."
 
 
 func _build_character_buttons() -> void:
@@ -106,6 +119,12 @@ func _build_character_buttons() -> void:
 		IconManager.apply_to_button(button, "person")
 		button.pressed.connect(_select_character.bind(character_id))
 		character_list.add_child(button)
+
+
+func _refresh_character_buttons() -> void:
+	for button: Button in character_list.get_children():
+		var is_selected: bool = button.text == PlayerManager.get_character_name()
+		button.add_theme_color_override("font_color", Color(1.0, 0.86, 0.45) if is_selected else Color(0.9, 0.93, 0.86))
 
 
 func _tools_summary() -> String:
@@ -138,13 +157,13 @@ func _style_menu_buttons() -> void:
 	for button: Button in buttons:
 		button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.add_theme_constant_override("h_separation", 10)
-		button.add_theme_font_size_override("font_size", 18)
+		button.add_theme_font_size_override("font_size", 16)
 		var normal := StyleBoxFlat.new()
 		normal.bg_color = Color(0.09, 0.19, 0.15, 0.92)
 		normal.border_color = Color(0.46, 0.62, 0.43, 0.55)
 		normal.set_border_width_all(1)
 		normal.set_corner_radius_all(6)
-		normal.set_content_margin_all(12)
+		normal.set_content_margin_all(10)
 		var hover := normal.duplicate() as StyleBoxFlat
 		hover.bg_color = Color(0.16, 0.32, 0.24, 0.98)
 		hover.border_color = Color(0.95, 0.78, 0.34, 0.9)
@@ -219,7 +238,23 @@ func _select_character(character_id: String) -> void:
 
 
 func _on_character_changed(character_data: Dictionary) -> void:
-	var character_name: String = str(character_data.get("name", "Joaquim"))
+	var character_name: String = str(character_data.get("name", "Maica"))
 	var character_description: String = str(character_data.get("description", ""))
 	selected_character_label.text = "Personagem: %s" % character_name
 	status_label.text = "%s selecionado. %s" % [character_name, character_description]
+	_update_avatar(character_data)
+	_refresh_character_buttons()
+
+
+func _update_avatar(character_data: Dictionary) -> void:
+	if avatar_frame == null or avatar_image == null:
+		return
+	var accent: Color = character_data.get("accent_color", Color(0.2, 0.5, 0.4))
+	var style := StyleBoxFlat.new()
+	style.bg_color = accent.darkened(0.45)
+	style.border_color = accent
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(10)
+	style.set_content_margin_all(6)
+	avatar_frame.add_theme_stylebox_override("panel", style)
+	avatar_image.texture = IconManager.get_icon("person")

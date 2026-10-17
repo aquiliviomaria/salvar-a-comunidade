@@ -1,6 +1,7 @@
 extends Area3D
 
 @export var mission_id := "emergency"
+@export var objective_id := ""
 @export var message := "Ajuda prestada na area de emergencia."
 @export var title := "Missao comunitaria"
 @export var health_reward := 8
@@ -18,6 +19,12 @@ func _ready() -> void:
 		$Label3D.text = "%s %s" % [icon, title]
 
 
+func get_prompt(_player: Node) -> String:
+	if completed:
+		return ""
+	return "E — Ajudar"
+
+
 func interact(_player: Node) -> String:
 	if completed:
 		return "✅ Esta tarefa comunitaria ja foi concluida. Procura outra area na comunidade."
@@ -26,7 +33,7 @@ func interact(_player: Node) -> String:
 		MissionManager.complete_community_task(title, health_reward, xp_reward)
 		ResourceManager.add_money(money_reward)
 	else:
-		MissionManager.progress_action(mission_id, 1)
+		MissionManager.progress_action(objective_id if objective_id != "" else mission_id, 1)
 	if has_node("Label3D"):
 		$Label3D.text = "✅ %s" % title
 	SoundManager.play_success()

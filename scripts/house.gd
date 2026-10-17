@@ -19,6 +19,12 @@ func _ready() -> void:
 			$RedCrossH.visible = false
 
 
+func get_prompt(_player: Node) -> String:
+	if is_hospital:
+		return "E — Ver unidade sanitaria"
+	return "E — Ver %s" % house_name
+
+
 func interact(_player: Node) -> String:
 	if is_hospital:
 		if ResourceManager.medicine <= 0:

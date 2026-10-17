@@ -58,6 +58,10 @@ func _pick_target() -> void:
 	)
 
 
+func get_prompt(_player: Node) -> String:
+	return "E — Observar"
+
+
 func interact(_player: Node) -> String:
 	wait_time = rng.randf_range(2.0, 4.0)
 	velocity = Vector3.ZERO

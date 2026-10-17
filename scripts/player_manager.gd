@@ -44,7 +44,7 @@ const CHARACTERS := {
 	}
 }
 
-var selected_character_id := "joaquim"
+var selected_character_id := "maica"
 
 
 func select_character(id: String) -> void:
