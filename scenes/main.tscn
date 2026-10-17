@@ -1,0 +1,51 @@
+[gd_scene load_steps=2 format=3 uid="uid://main_scene"]
+
+[ext_resource type="Script" path="res://scripts/world.gd" id="1_world"]
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_world")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 14, 0)
+light_energy = 2.3
+shadow_enabled = true
+
+[node name="Terrain" type="Node3D" parent="."]
+
+[node name="Houses" type="Node3D" parent="."]
+
+[node name="Nature" type="Node3D" parent="."]
+
+[node name="NPCs" type="Node3D" parent="."]
+
+[node name="Animals" type="Node3D" parent="."]
+
+[node name="Interactables" type="Node3D" parent="."]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="TopPanel" type="PanelContainer" parent="HUD"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 620.0
+offset_bottom = 430.0
+
+[node name="HUDText" type="Label" parent="HUD/TopPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "A carregar..."
+autowrap_mode = 2
+
+[node name="MessagePanel" type="PanelContainer" parent="HUD"]
+offset_left = 16.0
+offset_top = 592.0
+offset_right = 760.0
+offset_bottom = 704.0
+
+[node name="MessageText" type="Label" parent="HUD/MessagePanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Bem-vindo."
+autowrap_mode = 2

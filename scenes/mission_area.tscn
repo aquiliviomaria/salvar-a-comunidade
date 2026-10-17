@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3 uid="uid://mission_area_scene"]
+
+[ext_resource type="Script" path="res://scripts/mission_area.gd" id="1_mission_area"]
+
+[sub_resource type="BoxShape3D" id="MissionShape"]
+size = Vector3(3, 1, 3)
+
+[sub_resource type="BoxMesh" id="MissionMesh"]
+size = Vector3(3, 0.08, 3)
+
+[node name="MissionArea" type="Area3D"]
+script = ExtResource("1_mission_area")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("MissionMesh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("MissionShape")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+billboard = 1
+text = "🤝 Missao"

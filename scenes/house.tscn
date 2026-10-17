@@ -1,0 +1,109 @@
+[gd_scene load_steps=12 format=3 uid="uid://house_scene"]
+
+[ext_resource type="Script" path="res://scripts/house.gd" id="1_house"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_house"]
+size = Vector3(3, 2, 3)
+
+[sub_resource type="BoxShape3D" id="BoxShape_house"]
+size = Vector3(3, 2, 3)
+
+[sub_resource type="StandardMaterial3D" id="HouseMaterial"]
+albedo_color = Color(0.72, 0.54, 0.36, 1)
+
+[sub_resource type="StandardMaterial3D" id="RoofMaterial"]
+albedo_color = Color(0.42, 0.09, 0.06, 1)
+
+[sub_resource type="StandardMaterial3D" id="WindowMaterial"]
+albedo_color = Color(0.45, 0.78, 0.95, 1)
+
+[sub_resource type="StandardMaterial3D" id="DoorMaterial"]
+albedo_color = Color(0.25, 0.12, 0.05, 1)
+
+[sub_resource type="StandardMaterial3D" id="HospitalSignMaterial"]
+albedo_color = Color(0.86, 0.05, 0.05, 1)
+
+[sub_resource type="StandardMaterial3D" id="ChimneyMaterial"]
+albedo_color = Color(0.22, 0.19, 0.17, 1)
+
+[sub_resource type="BoxMesh" id="RoofMesh"]
+size = Vector3(3.45, 0.42, 3.35)
+
+[sub_resource type="BoxMesh" id="WindowMesh"]
+size = Vector3(0.58, 0.48, 0.06)
+
+[sub_resource type="BoxMesh" id="DoorMesh"]
+size = Vector3(0.68, 1.05, 0.08)
+
+[sub_resource type="BoxMesh" id="CrossVerticalMesh"]
+size = Vector3(0.16, 0.82, 0.08)
+
+[sub_resource type="BoxMesh" id="CrossHorizontalMesh"]
+size = Vector3(0.58, 0.16, 0.09)
+
+[sub_resource type="BoxMesh" id="ChimneyMesh"]
+size = Vector3(0.38, 0.85, 0.38)
+
+[node name="House" type="StaticBody3D"]
+script = ExtResource("1_house")
+
+[node name="Walls" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("BoxMesh_house")
+surface_material_override/0 = SubResource("HouseMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("BoxShape_house")
+
+[node name="RoofLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.985, 0.174, 0, -0.174, 0.985, 0, 0, 0, 1, -0.22, 2.22, 0)
+mesh = SubResource("RoofMesh")
+surface_material_override/0 = SubResource("RoofMaterial")
+
+[node name="RoofRight" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.985, -0.174, 0, 0.174, 0.985, 0, 0, 0, 1, 0.22, 2.22, 0)
+mesh = SubResource("RoofMesh")
+surface_material_override/0 = SubResource("RoofMaterial")
+
+[node name="Door" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.58, 1.54)
+mesh = SubResource("DoorMesh")
+surface_material_override/0 = SubResource("DoorMaterial")
+
+[node name="WindowLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.92, 1.35, 1.54)
+mesh = SubResource("WindowMesh")
+surface_material_override/0 = SubResource("WindowMaterial")
+
+[node name="WindowRight" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.92, 1.35, 1.54)
+mesh = SubResource("WindowMesh")
+surface_material_override/0 = SubResource("WindowMaterial")
+
+[node name="SideWindow" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 1.54, 1.25, -0.75)
+mesh = SubResource("WindowMesh")
+surface_material_override/0 = SubResource("WindowMaterial")
+
+[node name="Chimney" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.05, 2.7, -0.65)
+mesh = SubResource("ChimneyMesh")
+surface_material_override/0 = SubResource("ChimneyMaterial")
+
+[node name="RedCrossV" type="MeshInstance3D" parent="."]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.48, 1.585)
+mesh = SubResource("CrossVerticalMesh")
+surface_material_override/0 = SubResource("HospitalSignMaterial")
+
+[node name="RedCrossH" type="MeshInstance3D" parent="."]
+visible = false
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.48, 1.595)
+mesh = SubResource("CrossHorizontalMesh")
+surface_material_override/0 = SubResource("HospitalSignMaterial")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.75, 0)
+billboard = 1
+text = "Casa"

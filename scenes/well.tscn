@@ -1,0 +1,45 @@
+[gd_scene load_steps=7 format=3 uid="uid://well_scene"]
+
+[ext_resource type="Script" path="res://scripts/well.gd" id="1_well"]
+
+[sub_resource type="CylinderMesh" id="WellRimMesh"]
+top_radius = 0.85
+bottom_radius = 0.85
+height = 0.22
+
+[sub_resource type="CylinderMesh" id="WellWaterMesh"]
+top_radius = 0.72
+bottom_radius = 0.72
+height = 0.08
+
+[sub_resource type="BoxShape3D" id="WellShape"]
+size = Vector3(1.8, 1.2, 1.8)
+
+[sub_resource type="StandardMaterial3D" id="StoneMaterial"]
+albedo_color = Color(0.55, 0.50, 0.44, 1)
+
+[sub_resource type="StandardMaterial3D" id="WaterMaterial"]
+albedo_color = Color(0.12, 0.52, 0.88, 0.85)
+transparency = 1
+
+[node name="Well" type="StaticBody3D"]
+script = ExtResource("1_well")
+
+[node name="Rim" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+mesh = SubResource("WellRimMesh")
+surface_material_override/0 = SubResource("StoneMaterial")
+
+[node name="Water" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.46, 0)
+mesh = SubResource("WellWaterMesh")
+surface_material_override/0 = SubResource("WaterMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("WellShape")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+billboard = 1
+text = "💧 Poco"

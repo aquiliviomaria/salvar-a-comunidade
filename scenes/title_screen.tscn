@@ -1,0 +1,248 @@
+[gd_scene load_steps=7 format=3 uid="uid://title_screen"]
+
+[ext_resource type="Script" path="res://scripts/title_screen.gd" id="1_title"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.075, 0.105, 0.095, 0.94)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.25, 0.42, 0.33, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 24.0
+content_margin_top = 24.0
+content_margin_right = 24.0
+content_margin_bottom = 24.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_side"]
+bg_color = Color(0.035, 0.06, 0.055, 0.92)
+border_width_right = 1
+border_color = Color(0.23, 0.36, 0.29, 1)
+content_margin_left = 22.0
+content_margin_top = 22.0
+content_margin_right = 22.0
+content_margin_bottom = 22.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
+bg_color = Color(0.13, 0.31, 0.24, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_start"]
+bg_color = Color(0.83, 0.56, 0.18, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_status"]
+bg_color = Color(0.10, 0.16, 0.14, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+
+[node name="TitleScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_title")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.045, 0.095, 0.075, 1)
+
+[node name="PreviewContainer" type="SubViewportContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+stretch = true
+
+[node name="PreviewViewport" type="SubViewport" parent="PreviewContainer"]
+unique_name_in_owner = true
+handle_input_locally = false
+size = Vector2i(1280, 720)
+render_target_update_mode = 4
+
+[node name="RootMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
+
+[node name="Layout" type="HBoxContainer" parent="RootMargin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="SidePanel" type="PanelContainer" parent="RootMargin/Layout"]
+custom_minimum_size = Vector2(340, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_side")
+
+[node name="SideContent" type="VBoxContainer" parent="RootMargin/Layout/SidePanel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Kicker" type="Label" parent="RootMargin/Layout/SidePanel/SideContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.95, 0.83, 1)
+theme_override_font_sizes/font_size = 14
+text = "MVP ACADEMICO 3D"
+
+[node name="Title" type="Label" parent="RootMargin/Layout/SidePanel/SideContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+text = "Salvar a Comunidade"
+autowrap_mode = 2
+
+[node name="Subtitle" type="Label" parent="RootMargin/Layout/SidePanel/SideContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.86, 0.79, 1)
+theme_override_font_sizes/font_size = 16
+text = "Agua, saude, alimentacao, floresta e cooperacao numa comunidade mocambicana."
+autowrap_mode = 2
+
+[node name="Spacer" type="Control" parent="RootMargin/Layout/SidePanel/SideContent"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SelectedCharacterLabel" type="Label" parent="RootMargin/Layout/SidePanel/SideContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Personagem: Joaquim"
+autowrap_mode = 2
+
+[node name="StartButton" type="Button" parent="RootMargin/Layout/SidePanel/SideContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBoxFlat_start")
+text = "JOGAR"
+
+[node name="CharacterButton" type="Button" parent="RootMargin/Layout/SidePanel/SideContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "PERSONAGEM"
+
+[node name="MissionsButton" type="Button" parent="RootMargin/Layout/SidePanel/SideContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "MISSOES"
+
+[node name="InventoryButton" type="Button" parent="RootMargin/Layout/SidePanel/SideContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "INVENTARIO"
+
+[node name="HowToButton" type="Button" parent="RootMargin/Layout/SidePanel/SideContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "COMO JOGAR"
+
+[node name="OptionsButton" type="Button" parent="RootMargin/Layout/SidePanel/SideContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "OPCOES"
+
+[node name="QuitButton" type="Button" parent="RootMargin/Layout/SidePanel/SideContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "SAIR"
+
+[node name="MainPanel" type="PanelContainer" parent="RootMargin/Layout"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="MainContent" type="VBoxContainer" parent="RootMargin/Layout/MainPanel"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="ContentTitle" type="Label" parent="RootMargin/Layout/MainPanel/MainContent"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "Bem-vindo"
+
+[node name="ContentText" type="Label" parent="RootMargin/Layout/MainPanel/MainContent"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.86, 0.90, 0.84, 1)
+theme_override_font_sizes/font_size = 18
+text = "A carregar..."
+autowrap_mode = 2
+
+[node name="CharacterArea" type="VBoxContainer" parent="RootMargin/Layout/MainPanel/MainContent"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CharacterTitle" type="Label" parent="RootMargin/Layout/MainPanel/MainContent/CharacterArea"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Escolha rapida"
+
+[node name="CharacterList" type="VBoxContainer" parent="RootMargin/Layout/MainPanel/MainContent/CharacterArea"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StatusPanel" type="PanelContainer" parent="RootMargin/Layout/MainPanel/MainContent"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_status")
+
+[node name="StatusLabel" type="Label" parent="RootMargin/Layout/MainPanel/MainContent/StatusPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Pronto."
+autowrap_mode = 2
