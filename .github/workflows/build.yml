@@ -4,7 +4,64 @@ on:
   workflow_dispatch:
   push:
     tags:
+      - "v*"```yaml
+name: Build Salvar a Comunidade
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
       - "v*"
+
+jobs:
+  export-windows:
+    name: Exportar para Windows
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Obter o código
+        uses: actions/checkout@v4
+
+      - name: Configurar Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.5.1
+          use-dotnet: false
+
+      - name: Verificar versão e ficheiros
+        run: |
+          godot --version
+          git ls-files export_presets.cfg
+          test -f export_presets.cfg
+          grep -n 'name="Windows Desktop"' export_presets.cfg
+
+      - name: Verificar modelos de exportação
+        run: |
+          godot --headless --editor --path . --quit
+          godot --headless --path . --quit
+
+      - name: Exportar para Windows
+        run: |
+          mkdir -p build/windows
+          godot --headless --verbose --path . \
+            --export-release "Windows Desktop" \
+            "build/windows/Salvar_a_Comunidade.exe"
+
+      - name: Confirmar executável
+        run: |
+          test -f build/windows/Salvar_a_Comunidade.exe
+          ls -lh build/windows/
+
+      - name: Disponibilizar o executável
+        uses: actions/upload-artifact@v4
+        with:
+          name: Salvar-a-Comunidade-Windows
+          path: build/windows/Salvar_a_Comunidade.exe
+          if-no-files-found: error
+          retention-days: 14
+```
 
 jobs:
   export-windows:
