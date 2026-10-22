@@ -1,0 +1,40 @@
+name: Build Salvar a Comunidade
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  export-windows:
+    name: Exportar para Windows
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Obter o código
+        uses: actions/checkout@v4
+
+      - name: Configurar Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.5.1
+          use-dotnet: false
+
+      - name: Verificar o projecto
+        run: godot --headless --editor --path . --quit
+
+      - name: Exportar para Windows
+        run: |
+          mkdir -p build/windows
+          godot --headless --path . \
+            --export-release "Windows Desktop" \
+            "build/windows/Salvar_a_Comunidade.exe"
+
+      - name: Disponibilizar o executável
+        uses: actions/upload-artifact@v4
+        with:
+          name: Salvar-a-Comunidade-Windows
+          path: build/windows/
+          if-no-files-found: error
+          retention-days: 14
