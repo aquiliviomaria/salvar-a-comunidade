@@ -539,15 +539,3 @@ Cobre, entre outros:
 Resultado esperado: `RESULTADO: OK` e codigo de saida `0`.
 
 ---
-
-## Limitacoes conhecidas
-
-- O mundo e a interface usam primitivas 3D e emojis; os emojis podem aparecer de forma
-  diferente conforme o sistema. Numa versao final podem ser substituidos por icones
-  SVG/PNG dedicados.
-- O progresso da comunidade (agua, alimentacao, saude, ambiente, bem-estar) e registado
-  internamente e actualizado pelas missoes/tarefas; nao existe ainda um painel dedicado
-  que mostre todos os indicadores em detalhe.
-- Alguns menus e a interface devem ser verificados visualmente no editor Godot em varias
-  resolucoes (em modo headless nao e possivel avaliar o layout).
-- A pasta `tests/` pode ser removida sem afectar o jogo.
